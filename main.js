@@ -5,13 +5,13 @@ define(function(require, exports, module) {
 		    alignSelection(treeController, '|');
 	    });
 		
-
+	    
+	    // StringBuilder below thanks to: http://stackoverflow.com/a/4717855/707120
 	    function StringBuilder() {
 		  this._array = [];
 		    this._index = 0;
 	    }
 
-	    // StringBuilder below is from: http://stackoverflow.com/a/4717855/707120
 	    StringBuilder.prototype.length = function () {
 		return this._array.length
 	    }
@@ -25,57 +25,35 @@ define(function(require, exports, module) {
 		  return this._array.join('');
 	    }
 
+
+
 	    function alignLines(nodes, alignChar ) {
 
 		// establish column lengths
 		var columnWidth = new Array();
 		for ( i = 0; i < nodes.length; i++ ) {
 		    var ialignChar = 0;
-		    var text = nodes[i];
+		    var lengths = nodes[i].split( alignChar ).map( function (d) { return d.length } )
 
-		    for ( j = 0; j < text.length; j++ ) {
-			if ( text[j] == alignChar ) {
-			    if ( columnWidth.length <= ialignChar || columnWidth[ialignChar] < j ) {
-				columnWidth[ialignChar] = j;
-			    }
-			    ialignChar++;
-			} else {
-			    console.log( "failed to match ".concat( text[j], " with ", alignChar ) )
-			}
-
-		    }
-		}
-
-
-		console.log( "columnWidth.length(".concat( columnWidth.length, ")") )
-		for ( i = 0; i < columnWidth.length; ++i ) {
-		    console.log( "columnWidth[".concat(i, "]=", columnWidth[i] ) )
+		    for ( j = 0; j < lengths.length; j++ )
+			if ( j >= columnWidth.length || lengths[j] > columnWidth[j] )
+			    columnWidth[j] = lengths[j]
 		}
 
 		// align the text
 		var newLines = new Array();
 		for ( i = 0; i < nodes.length; i++ ) {
-		    var ialignChar = 0;
-		    var inewText = 0;
-		    var text = nodes[i];
 		    var newText = new StringBuilder();
-
-		    console.log("text=".concat(text) )
+		    var text = nodes[i].split(alignChar)
 
 		    // transcribe the text
 		    for ( j = 0; j < text.length; j++ ) {
-			if ( text[j] == alignChar ) {
-			    var padlen = columnWidth[ialignChar] - newText.length();
-			    for ( k = 0; k < padlen; k++ ) {
-				newText.append(" ");
-			    }
-			    newText.append(text[j])	// forward the alignChar
-			    ialignChar++;
-			} else {
-			    newText.append(text[j]);
-			}
+			var pad = columnWidth[j]  - text[j].length
+			newText.append( text[j] )
+			if ( pad > 0 ) { newText.append( Array( pad+1 ).join(" ") ) }
+			if ( j < text.length-1 ) { newText.append( alignChar ) }
 		    }
-			
+
 		    newLines.push(newText.toString());
 		}
 		return newLines;
@@ -92,16 +70,10 @@ define(function(require, exports, module) {
 		    
 		    var nodes = selectedRange.nodesInRange();
 		    var newText = alignLines( nodes.map( function(x) { return x.text() } ), alignChar )
-		    console.log("nodes[0].text=".concat(nodes[0].text()))
-		    console.log("X".concat("Y"))
-
-		    console.log(newText.length)
-		    console.log(newText[0])
 
 		    for ( i = 0; i < nodes.length; i++ ) {
 			nodes[i].setText( newText[i] )
 		    }
-
 
 		    treeModel.endUpdates();
 		    undoManager.endUndoGrouping();
